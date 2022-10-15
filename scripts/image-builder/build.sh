@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e -o pipefail
+set -x
 
 ROOTDIR=$(git rev-parse --show-toplevel)
 SCRIPTDIR=${ROOTDIR}/scripts/image-builder
@@ -228,8 +229,10 @@ createrepo microshift-local >/dev/null
 # Download openshift local RPM packages (noarch for python and selinux packages)
 rm -rf openshift-local 2>/dev/null || true
 reposync -n -a ${BUILD_ARCH} -a noarch --download-path openshift-local \
-            --repo=rhocp-4.11-for-rhel-8-${BUILD_ARCH}-rpms \
-            --repo=fast-datapath-for-rhel-8-${BUILD_ARCH}-rpms >/dev/null
+            --repo=rhocp-4.10-for-rhel-8-${BUILD_ARCH}-rpms \
+            --repo=fast-datapath-for-rhel-8-${BUILD_ARCH}-rpms \
+	    --repo=rhel-8-for-x86_64-baseos-rpms \
+            --repo=rhel-8-for-x86_64-appstream-rpms >/dev/null
 
 # Remove coreos packages to avoid conflicts
 find openshift-local -name \*coreos\* -exec rm -f {} \;

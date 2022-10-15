@@ -13,7 +13,7 @@ include ./vendor/github.com/openshift/build-machinery-go/make/targets/openshift/
 export BIN_TIMESTAMP ?=$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
 export TIMESTAMP ?=$(shell echo $(BIN_TIMESTAMP) | tr -d ':' | tr 'T' '-' | tr -d 'Z')
 
-RELEASE_BASE := 4.12.0
+RELEASE_BASE := 4.10.0
 RELEASE_PRE := ${RELEASE_BASE}-0.microshift
 
 # Overload SOURCE_GIT_TAG value set in vendor/github.com/openshift/build-machinery-go/make/lib/golang.mk
