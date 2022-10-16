@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e -o pipefail
-set -x
 
 ROOTDIR=$(git rev-parse --show-toplevel)
 SCRIPTDIR=${ROOTDIR}/scripts/image-builder
@@ -50,6 +49,8 @@ usage() {
     echo "  -authorized_keys_file"
     echo "          Path to an SSH authorized_keys file to allow SSH access"
     echo "          into the default 'redhat' account"
+    echo "  -disk"
+    echo "          Disk to install (This is necessary if system has multiple disks)"
     exit 1
 }
 
@@ -170,6 +171,12 @@ while [ $# -gt 0 ] ; do
         shift
         AUTHORIZED_KEYS_FILE="$1"
         [ -z "${AUTHORIZED_KEYS_FILE}" ] && usage "Authorized keys file not specified"
+        shift
+        ;;
+    -disk)
+        shift
+        INSTALL_DISK="$1"
+        [ -z "${INSTALL_DISK}" ] && usage "Disk name not specified"
         shift
         ;;
     -prometheus)
@@ -310,14 +317,18 @@ cat "${SCRIPTDIR}/config/kickstart.ks.template" \
     | sed "s;REPLACE_BUILD_ARCH;${BUILD_ARCH};g" \
     > kickstart.ks
 
+if [[ "${INSTALL_DISK:-none}" != "none" ]]; then
+    sed -i "/^zerombr/i ignoredisk --only-use=${INSTALL_DISK}" kickstart.ks
+fi
+
 # Run the ISO creation procedure
 sudo mkksiso kickstart.ks ${IMGNAME}-installer-0.0.0-installer.iso ${IMGNAME}-installer-${IMAGE_VERSION}.${BUILD_ARCH}.iso
 sudo chown -R $(whoami). "${BUILDDIR}"
 
 # Remove intermediate artifacts to free disk space
-rm -f ${IMGNAME}-installer-0.0.0-installer.iso
+#rm -f ${IMGNAME}-installer-0.0.0-installer.iso
 
-${SCRIPTDIR}/cleanup.sh
+#${SCRIPTDIR}/cleanup.sh
 
 title "Done"
 popd &>/dev/null
