@@ -51,6 +51,8 @@ usage() {
     echo "          into the default 'redhat' account"
     echo "  -disk"
     echo "          Disk to install (This is necessary if system has multiple disks)"
+    echo "  -kernel_rt"
+    echo "          Install kernel-rt"
     exit 1
 }
 
@@ -179,6 +181,10 @@ while [ $# -gt 0 ] ; do
         [ -z "${INSTALL_DISK}" ] && usage "Disk name not specified"
         shift
         ;;
+    -kernel_rt)
+        INSTALL_RT=true
+        shift
+        ;;
     -prometheus)
         PROMETHEUS=true
         shift
@@ -238,8 +244,9 @@ rm -rf openshift-local 2>/dev/null || true
 reposync -n -a ${BUILD_ARCH} -a noarch --download-path openshift-local \
             --repo=rhocp-4.10-for-rhel-8-${BUILD_ARCH}-rpms \
             --repo=fast-datapath-for-rhel-8-${BUILD_ARCH}-rpms \
-	    --repo=rhel-8-for-x86_64-baseos-rpms \
-            --repo=rhel-8-for-x86_64-appstream-rpms >/dev/null
+	    --repo=rhel-8-for-${BUILD_ARCH}-baseos-rpms \
+            --repo=rhel-8-for-${BUILD_ARCH}-appstream-rpms \
+             >/dev/null
 
 # Remove coreos packages to avoid conflicts
 find openshift-local -name \*coreos\* -exec rm -f {} \;
@@ -304,6 +311,10 @@ EOF
     done
 fi
 
+if [[ "${INSTALL_RT:-no}" == "true" ]]; then
+    sed -i "/^\[customizations\]/a [customizations.kernel]\nname = \"kernel-rt\"" blueprint_v0.0.1.toml
+fi
+
 build_image blueprint_v0.0.1.toml "${IMGNAME}-container" 0.0.1 edge-container
 build_image installer.toml        "${IMGNAME}-installer" 0.0.0 edge-installer "${IMGNAME}-container" 0.0.1
 
@@ -326,9 +337,9 @@ sudo mkksiso kickstart.ks ${IMGNAME}-installer-0.0.0-installer.iso ${IMGNAME}-in
 sudo chown -R $(whoami). "${BUILDDIR}"
 
 # Remove intermediate artifacts to free disk space
-#rm -f ${IMGNAME}-installer-0.0.0-installer.iso
+rm -f ${IMGNAME}-installer-0.0.0-installer.iso
 
-#${SCRIPTDIR}/cleanup.sh
+${SCRIPTDIR}/cleanup.sh
 
 title "Done"
 popd &>/dev/null
