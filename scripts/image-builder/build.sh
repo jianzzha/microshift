@@ -16,6 +16,7 @@ AUTHORIZED_KEYS=
 PROMETHEUS=false
 STARTTIME=$(date +%s)
 BUILDDIR=${ROOTDIR}/_output/image-builder
+KERNEL_ARGS=
 
 trap ${SCRIPTDIR}/cleanup.sh INT
 
@@ -53,6 +54,8 @@ usage() {
     echo "          Disk to install (This is necessary if system has multiple disks)"
     echo "  -kernel_rt"
     echo "          Install kernel-rt"
+    echo "  -kernel_args"
+    echo "          Kernel boot parameters"
     exit 1
 }
 
@@ -183,6 +186,12 @@ while [ $# -gt 0 ] ; do
         ;;
     -kernel_rt)
         INSTALL_RT=true
+        shift
+        ;;
+    -kernel_args)
+        shift
+        KERNEL_ARGS="$1"
+        [ -z "${KERNEL_ARGS}" ] && usage "Kernel boot parameters not specified"
         shift
         ;;
     -prometheus)
@@ -326,6 +335,7 @@ cat "${SCRIPTDIR}/config/kickstart.ks.template" \
     | sed "s;REPLACE_OCP_PULL_SECRET_CONTENTS;$(cat $OCP_PULL_SECRET_FILE | jq -c);g" \
     | sed "s;REPLACE_REDHAT_AUTHORIZED_KEYS_CONTENTS;${AUTHORIZED_KEYS};g" \
     | sed "s;REPLACE_BUILD_ARCH;${BUILD_ARCH};g" \
+    | sed "s;REPLACE_KERNEL_ARGS;${KERNEL_ARGS};g" \
     > kickstart.ks
 
 if [[ "${INSTALL_DISK:-none}" != "none" ]]; then
